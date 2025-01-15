@@ -1,0 +1,110 @@
+---
+title: "feature importance analysis"
+output: html_document
+date: "2025-01-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+setwd("C:/Users/Thanos/Desktop/advanced statistical modeling/mental health")
+
+```
+
+```{r}
+data <-read.csv("students_mental_health_survey.csv")
+```
+
+```{r}
+str(data)
+```
+
+```{r}
+#data1 doesn't omit some rows with missing values
+#data1 <- na.omit(students_mental_health_survey)
+data <- na.omit("students_mental_health_survey.csv") # Remove rows with missing values
+```
+
+
+```{r}
+categorical_vars <- c("Course", "Gender", "Sleep_Quality", "Physical_Activity", "Diet_Quality",
+                      "Social_Support", "Relationship_Status", "Substance_Use", 
+                      "Counseling_Service_Use", "Family_History", "Chronic_Illness", 
+                      "Extracurricular_Involvement", "Residence_Type")
+
+data[categorical_vars] <- lapply(data[categorical_vars], as.factor)
+```
+
+```{r}
+data$Depression_Score <- as.factor(data$Depression_Score)
+```
+
+```{r}
+set.seed(42)
+train_index <- sample(1:nrow(data), 0.7 * nrow(data))
+train_data <- data[train_index, ]
+test_data <- data[-train_index, ]
+```
+
+```{r}
+model <- glm(Depression_Score ~ ., data = train_data, family = "binomial")
+```
+
+```{r}
+summary(model)
+```
+```{r}
+qqnorm(residuals(model))
+qqline(residuals(model))
+```
+
+```{r}
+coefficients <- as.data.frame(summary(model)$coefficients) # Extract and clean coefficients for visualization
+
+colnames(coefficients) <- c("Estimate", "StdError", "z_value", "p_value") #renaming collumns to make them more descriptive
+coefficients <- coefficients %>% rownames_to_column("Course") #adding feature names as columns
+
+# Filtering out the intercept
+coefficients <- coefficients %>% filter(Course != "(Intercept)")
+```
+
+```{r}
+ggplot(coefficients, aes(x = reorder(Course, abs(Estimate)), y = Estimate)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Feature Importance from Logistic Regression",
+       x = "Features", y = "Coefficient Estimate")
+```
+
+```{r}
+data$Course <- as.factor(data$Course)
+
+# Focus only on course categories
+course_data <- data %>% select(Depression_Score, Course)
+
+course_model <- glm(Depression_Score ~ Course, data = course_data, family = "binomial")
+
+summary(course_model)
+
+course_coefficients <- as.data.frame(summary(course_model)$coefficients)
+
+# Adding course categories as a feature column
+course_coefficients <- course_coefficients %>% rownames_to_column("Course")
+
+course_coefficients <- course_coefficients %>% filter(Course != "(Intercept)")
+
+ggplot(course_coefficients, aes(x = reorder(Course, abs(Estimate)), y = Estimate)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Feature Importance for Course Categories",
+       x = "Course Categories", y = "Coefficient Estimate")
+
+```
+

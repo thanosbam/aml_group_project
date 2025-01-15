@@ -1,0 +1,323 @@
+---
+title: "Untitled"
+output: pdf_document
+date: "2024-12-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Make sure to install packages before using them
+
+```{r}
+library(tidyverse)
+library(plyr)
+library(lme4)
+library(plotfunctions)
+library(dplyr)
+library(Amelia)
+library(tidyr)
+library(corrplot)
+library(ggplot2)
+library(performance)
+```
+
+```{r}
+setwd("C:/Users/Thanos/Desktop/advanced statistical modeling/mental health")
+```
+```{r}
+rstudioapi::filesPaneNavigate("C:/Users/Thanos/Desktop/advanced statistical modeling/mental health")
+
+```
+
+```{r}
+#read.csv("students_mental_health_survey.csv")
+data <-read.csv("students_mental_health_survey.csv")
+
+```
+
+```{r}
+str(data)
+summary(data)
+```
+
+So the data table has very few missing values, however because later on I encountered some error due to the uneven length of the collumns I decided to weed the records with missing values out.
+
+```{r}
+col_na_count <- colSums(is.na(data))
+print(col_na_count, max = length(col_na_count))
+```
+Don't bother with the missmap, it turns out I was trying to find something that isn't even there, I believe the NA values were so few that missmap function can't show much detail
+```{r}
+missmap(data, main = "Missing Values Map", col = c("red", "blue"))
+
+```
+```{r}
+
+data %>%
+  summarise(across(where(is.numeric), list(
+    mean = ~mean(.x, na.rm = TRUE),
+    median = ~median(.x, na.rm = TRUE),
+    sd = ~sd(.x, na.rm = TRUE)
+  )))
+```
+```{r}
+mean_table <- data %>%
+  summarise(across(where(is.numeric), ~mean(.x, na.rm = TRUE))) %>%
+  pivot_longer(everything(), names_to = "Variable", values_to = "Mean")
+
+median_table <- data %>%
+  summarise(across(where(is.numeric), ~median(.x, na.rm = TRUE))) %>%
+  pivot_longer(everything(), names_to = "Variable", values_to = "Median")
+
+sd_table <- data %>%
+  summarise(across(where(is.numeric), ~sd(.x, na.rm = TRUE))) %>%
+  pivot_longer(everything(), names_to = "Variable", values_to = "SD")
+
+```
+
+
+```{r}
+# Correlation matrix
+cor_matrix <- data %>%
+  select(where(is.numeric)) %>%
+  cor(use = "complete.obs")
+
+# Visualize the correlation matrix
+corrplot(cor_matrix, method = "circle", type = "lower", tl.cex = 0.8)
+
+```
+That's where I omit NA values
+```{r}
+# NOT NEEDED, THE MEESING VALUES ARE TOO FEW
+clean_health <- na.omit(data[, c("Age","Course", "Gender", "CGPA", "Stress_Level", "Depression_Score", "Anxiety_Score", "Sleep_Quality", "Physical_Activity", "Diet_Quality","Social_Support", "Relationship_Status", "Substance_Use", "Counseling_Service_Use", "Family_History", "Chronic_Illness", "Financial_Stress", "Extracurricular_Involvement", "Semester_Credit_Load", "Residence_Type")])
+```
+
+Really just used my intuiton to write down some linear models that made some sense heuristicaly 
+```{r}
+model1 <- lm(Depression_Score ~ Age + Gender, clean_health)
+model2 <- lm(Depression_Score ~ Course + CGPA, clean_health)
+model3 <- lm(Depression_Score ~ CGPA, clean_health)
+model4 <- lm(Depression_Score ~ Stress_Level, clean_health)
+model5 <- lm(Depression_Score ~ Anxiety_Score, clean_health)
+model6 <- lm(Depression_Score ~ Sleep_Quality + Physical_Activity + Diet_Quality, clean_health)
+model7 <- lm(Depression_Score ~ Social_Support, clean_health)
+model8 <- lm(Depression_Score ~ Relationship_Status, clean_health)
+model9 <- lm(Depression_Score ~ Substance_Use, clean_health)
+model10 <- lm(Depression_Score ~ Counseling_Service_Use, clean_health)
+model11 <- lm(Depression_Score ~ Chronic_Illness, clean_health)
+model12 <- lm(Depression_Score ~ Financial_Stress, clean_health)
+model13 <- lm(Depression_Score ~ Extracurricular_Involvement, clean_health)
+model14 <- lm(Depression_Score ~ Semester_Credit_Load, clean_health)
+```
+
+```{r}
+plot(model1)
+plot(model2)
+plot(residuals(model2))
+plot(model2, which = 1)
+plot(model2, which = 2)
+qqnorm(residuals(model1))
+qqline(residuals(model1))
+qqnorm(residuals(model2))
+qqline(residuals(model2))
+```
+
+
+```{r}
+#the following plot shows that the Depression Score is getting smaller the higher the GPA becomes, which is unexpected and interesting.
+ggplot(clean_health, aes(x = CGPA, y = Depression_Score)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "red") +
+  labs(title = "Depression Score vs. CGPA", x = "CGPA", y = "Depression Score") +
+  theme_minimal()
+```
+
+
+```{r}
+#Doing the same for each course shows a similar trend, you can also see that the Computer Science students have a significantly larger Depression score
+ggplot(clean_health, aes(x = CGPA, y = Depression_Score, color = Course)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Depression Score vs. CGPA by Course", x = "CGPA", y = "Depression Score") +
+  theme_minimal()
+```
+
+
+```{r}
+#On the relation between stress level and depression score, there is slight trend that shows that the stress level has an negative relation with depression score, which I found weird.
+ggplot(clean_health, aes(x = Stress_Level, y = Depression_Score, color = Course)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Stress level vs. Depression score", x = "Stress level", y = "Depression Score") +
+  theme_minimal()
+```
+
+
+```{r}
+#On the following plot you can observe a slight possitive relation between credit load and depression score, although as you can see except from the Computer science students all the others are grouped up very closely together
+ggplot(clean_health, aes(x = Semester_Credit_Load, y = Depression_Score, color = Course)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Depression score vs. Credit load", x = "Credit load", y = "Depression Score") +
+  theme_minimal()
+```
+
+
+```{r}
+#Also very unexpected, the Relationship status attribute has little to no effect at least on its own to the depression score.
+ggplot(clean_health, aes(x = Relationship_Status, y = Depression_Score)) +
+  geom_boxplot(fill = "lightblue") +
+  labs(title = "Depression Score by Relationship Status",
+       x = "Relationship Status", 
+       y = "Depression Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+The idea was to calculate the mean Depression_Score for each non numerical feature. I was hopping to see significant difference for example in mean Depression Score for males and females but in general the only category that showed significant difference was the Computer Science category in Course, which is much higher that the rest. You can also see that on the following plot
+```{r}
+ggplot(clean_health, aes(x = Course, y = Depression_Score)) +
+  geom_boxplot(fill = "lightblue") +
+  labs(title = "Depression Score by Course", x = "Course", y = "Depression Score") +
+  theme_minimal()
+```
+```{r}
+mean_depression_course <- dplyr::group_by(clean_health, Course) %>%
+    dplyr::summarize(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE)) %>%
+    dplyr::ungroup()
+
+print(mean_depression_course, n = Inf)
+
+```
+
+```{r}
+
+# Calculate the mean Depression_Score for each non-numerical feature
+
+
+mean_depression_gender <- dplyr::group_by(clean_health, Gender) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_sleep <- dplyr::group_by(clean_health,Sleep_Quality) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_physical <- dplyr::group_by(clean_health, Physical_Activity) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_diet <- dplyr::group_by(clean_health, Diet_Quality) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_social <- dplyr::group_by(clean_health, Social_Support) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_relationship <- dplyr::group_by(clean_health, Relationship_Status) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_substance <- dplyr::group_by(clean_health, Substance_Use) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_counceling <- dplyr::group_by(clean_health, Counseling_Service_Use) %>%  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_physical <- dplyr::group_by(clean_health, Physical_Activity) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_family <- dplyr::group_by(clean_health, Family_History) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_chronic <- dplyr::group_by(clean_health, Chronic_Illness) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_extra <- dplyr::group_by(clean_health, Extracurricular_Involvement) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+mean_depression_residence <- dplyr::group_by(clean_health, Residence_Type) %>%
+  dplyr::summarise(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE))
+
+```
+
+Here I just performed varius anovas, the model2 that contains the Course is alot better than any other, in general I believe that the "Course" feature will account for alot of information compared to the others
+```{r}
+anova(model1,model2)
+anova(model2,model3)
+anova(model3,model4)
+anova(model4,model5)
+anova(model5,model6)
+anova(model6,model7)
+anova(model7,model8)
+anova(model8,model9)
+anova(model9,model10)
+anova(model10,model11)
+anova(model11,model12)
+anova(model12,model13)
+anova(model13,model14)
+```
+Likewise I wrote down some more complex random effects models that made some sence to me
+```{r}
+
+model <- lmer(Depression_Score ~ Stress_Level + Anxiety_Score + Sleep_Quality + Financial_Stress +
+                Social_Support + Diet_Quality + (1 | Course), data = clean_health,REML=FALSE)
+
+summary(model)
+
+modell <- lmer(Depression_Score ~ Stress_Level + Anxiety_Score  + Financial_Stress +
+                  Diet_Quality + (1 | Course), data = clean_health,REML=FALSE)
+
+summary(modell)
+
+modelll <- lmer(Depression_Score ~ Stress_Level + Anxiety_Score  + Financial_Stress +
+                   (0+CGPA| Course), data = clean_health,REML=FALSE)
+
+summary(modelll)
+
+
+```
+
+
+```{r}
+plot(model)
+qqnorm(residuals(model))
+qqline(residuals(model))
+qqnorm(residuals(model2))
+qqline(residuals(model2))
+```
+
+```{r}
+r2(model)
+r2(model2)
+```
+```{r}
+AIC(model)
+AIC(model2)
+BIC(model)
+BIC(model2)
+```
+```{r}
+ranef(model)
+```
+
+
+```{r}
+anova(model,modell)
+anova(model,modelll)
+
+```
+```{r}
+qqnorm(residuals(model))
+qqline(residuals(model))
+qqnorm(residuals(model2))
+qqline(residuals(model2))
+qqnorm(residuals(model3))
+qqline(residuals(model3))
+```
+Here I checked the representation of each course, there is a overrepresentation of medical students, not sure if this is a problem or not.
+```{r}
+# Count occurrences of each Course
+course_counts <- table(clean_health$Course)
+
+print(course_counts)
+
+```
+If we are going to follow a neural network some parts of the code above are largely not needed since its a black box approach. Nevertheless we might include it for some insight. My intuition tells me since alot of the features show little variance across students the neural network might need to be rather deep.
+As a side note since the depression score is numerical we might want to categorize the values within some ranges so to make it nominal. Or else we can predict a value for a new student, but this is not classification
