@@ -63,7 +63,7 @@ X = scaler.fit_transform(X)
 
 
 # 1. K-fold CV setup
-kf = KFold(n_splits=10, shuffle=True, random_state=42)
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
 # 2. Parameter Values
 C_values = np.logspace(-20, 6, num=100)  #Candidate C-Values
@@ -103,10 +103,10 @@ print(y.value_counts())
 
 
 # 1. K-fold CV setup
-kf = KFold(n_splits=10, shuffle=True, random_state=42)
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
 # 2. Parameter Values
-C_values = np.logspace(-5, 5, num=100)  # Candidate C-Values for SVM
+C_values = np.logspace(-20, 3, num=100)  # Candidate C-Values for SVM
 
 # 3. Initiate Output
 best_score = -np.inf
