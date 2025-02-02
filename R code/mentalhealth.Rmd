@@ -127,43 +127,73 @@ qqline(residuals(model2))
 
 ```{r}
 #the following plot shows that the Depression Score is getting smaller the higher the GPA becomes, which is unexpected and interesting.
-ggplot(clean_health, aes(x = CGPA, y = Depression_Score)) +
+plot1 <-ggplot(clean_health, aes(x = CGPA, y = Depression_Score)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = TRUE, color = "red") +
   labs(title = "Depression Score vs. CGPA", x = "CGPA", y = "Depression Score") +
   theme_minimal()
 ```
 
+```{r}
+plot1
+```
+```{r}
+ggsave(plot1, 
+       filename = "cgpa_vs_depression.png",
+       device = "png",
+       height = 3, width = 6, units = "in")
+```
 
 ```{r}
 #Doing the same for each course shows a similar trend, you can also see that the Computer Science students have a significantly larger Depression score
-ggplot(clean_health, aes(x = CGPA, y = Depression_Score, color = Course)) +
+plot2 <-ggplot(clean_health, aes(x = CGPA, y = Depression_Score, color = Course)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE) +
   labs(title = "Depression Score vs. CGPA by Course", x = "CGPA", y = "Depression Score") +
   theme_minimal()
 ```
-
-
 ```{r}
-#On the relation between stress level and depression score, there is slight trend that shows that the stress level has an negative relation with depression score, which I found weird.
-ggplot(clean_health, aes(x = Stress_Level, y = Depression_Score, color = Course)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Stress level vs. Depression score", x = "Stress level", y = "Depression Score") +
-  theme_minimal()
+plot2
+ggsave(plot2, 
+       filename = "cgpa_vs_depression_each.png",
+       device = "png",
+       height = 3, width = 6, units = "in")
 ```
 
 
 ```{r}
+#On the relation between stress level and depression score, there is slight trend that shows that the stress level has an negative relation with depression score, which I found weird.
+plot3 <-ggplot(clean_health, aes(x = Stress_Level, y = Depression_Score, color = Course)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Depression score vs. Stress level", x = "Stress level", y = "Depression Score") +
+  theme_minimal()
+```
+
+```{r}
+plot3
+ggsave(plot3, 
+       filename = "stress_vs_depression.png",
+       device = "png",
+       height = 3, width = 6, units = "in")
+```
+
+```{r}
 #On the following plot you can observe a slight possitive relation between credit load and depression score, although as you can see except from the Computer science students all the others are grouped up very closely together
-ggplot(clean_health, aes(x = Semester_Credit_Load, y = Depression_Score, color = Course)) +
+plot4 <-ggplot(clean_health, aes(x = Semester_Credit_Load, y = Depression_Score, color = Course)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE) +
   labs(title = "Depression score vs. Credit load", x = "Credit load", y = "Depression Score") +
   theme_minimal()
 ```
 
+```{r}
+plot4
+ggsave(plot4, 
+       filename = "credit_load_vs_depression_each.png",
+       device = "png",
+       height = 3, width = 6, units = "in")
+```
 
 ```{r}
 #Also very unexpected, the Relationship status attribute has little to no effect at least on its own to the depression score.
@@ -178,11 +208,20 @@ ggplot(clean_health, aes(x = Relationship_Status, y = Depression_Score)) +
 ```
 The idea was to calculate the mean Depression_Score for each non numerical feature. I was hopping to see significant difference for example in mean Depression Score for males and females but in general the only category that showed significant difference was the Computer Science category in Course, which is much higher that the rest. You can also see that on the following plot
 ```{r}
-ggplot(clean_health, aes(x = Course, y = Depression_Score)) +
+plot6 <-ggplot(clean_health, aes(x = Course, y = Depression_Score)) +
   geom_boxplot(fill = "lightblue") +
   labs(title = "Depression Score by Course", x = "Course", y = "Depression Score") +
   theme_minimal()
 ```
+
+```{r}
+plot6
+ggsave(plot6, 
+       filename = "course_depression.png",
+       device = "png",
+       height = 3, width = 6, units = "in")
+```
+
 ```{r}
 mean_depression_course <- dplyr::group_by(clean_health, Course) %>%
     dplyr::summarize(Mean_Depression_Score = mean(Depression_Score, na.rm = TRUE)) %>%
@@ -296,13 +335,6 @@ BIC(model2)
 ```{r}
 ranef(model)
 ```
-
-
-```{r}
-anova(model,modell)
-anova(model,modelll)
-
-```
 ```{r}
 qqnorm(residuals(model))
 qqline(residuals(model))
@@ -321,3 +353,207 @@ print(course_counts)
 ```
 If we are going to follow a neural network some parts of the code above are largely not needed since its a black box approach. Nevertheless we might include it for some insight. My intuition tells me since alot of the features show little variance across students the neural network might need to be rather deep.
 As a side note since the depression score is numerical we might want to categorize the values within some ranges so to make it nominal. Or else we can predict a value for a new student, but this is not classification
+```{r}
+ggplot(clean_health, aes(x = Depression_Score)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "black", alpha = 0.7) +
+  ggtitle("Distribution of Depression Scores") +
+  xlab("Depression Score") +
+  ylab("Frequency") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+```{r}
+depression_distribution_all <- ggplot(clean_health, aes(x = Depression_Score)) +
+  geom_histogram(bins = 30, fill = "lightblue", color = "black") +
+  ggtitle("Distribution of Depression Scores") +
+  xlab("Depression Score") +
+  ylab("Frequency") +
+  theme_minimal()
+
+```
+```{r}
+depression_distribution_all
+ggsave("depression_all.png", 
+       plot = depression_distribution_all, 
+       device = "png", 
+       height = 3, width = 6, units = "in")
+```
+
+```{r}
+depression_counts <- table(clean_health$Depression_Score)
+print(depression_counts)
+
+```
+```{r}
+
+clean_health$Depression_Group <- ifelse(clean_health$Depression_Score %in% c(0,1,2), "Low (0-2)", "High (3-5)")
+
+# Count occurrences in each group and reorder them
+group_counts <- table(clean_health$Depression_Group)
+group_counts <- group_counts[c("Low (0-2)", "High (3-5)")]  # Ensuring correct order
+
+# Visualize the counts using a bar plot with y-axis limit and correct order
+barplot_heights <- barplot(group_counts, 
+                           col = c("lightgreen", "indianred"), 
+                           main = "Count of Depression Groups",
+                           xlab = "Depression Groups", 
+                           ylab = "Count",
+                           border = "black",
+                           ylim = c(0, 4500))  # Increased limit for space
+
+# Add text labels above bars, adjusting the position slightly lower
+text(x = barplot_heights, 
+     y = group_counts + 100,  # Slightly adjusting the y position for visibility
+     labels = group_counts, 
+     pos = 3, 
+     cex = 1.2, 
+     col = "black")
+
+```
+```{r}
+# Open a PNG graphics device
+png("depression_groups.png", width = 6, height = 4, units = "in", res = 300)
+
+barplot_heights <- barplot(group_counts, 
+                           col = c("lightgreen", "indianred"), 
+                           main = "Depression Group distribution",
+                           xlab = "Depression Groups", 
+                           ylab = "Count",
+                           border = "black",
+                           ylim = c(0, 4500))
+
+text(x = barplot_heights, 
+     y = group_counts + 100,  
+     labels = group_counts, 
+     pos = 3, 
+     cex = 1.2, 
+     col = "black")
+
+# Close the graphics device to save the file
+dev.off()
+
+```
+
+```{r}
+# Given counts
+low_count <- 3891
+high_count <- 3104
+total_count <- low_count + high_count
+
+# Accuracy for always predicting the majority class
+majority_accuracy <- max(low_count, high_count) / total_count
+
+# Accuracy for a purely random model (50% guessing)
+random_accuracy <- (low_count / total_count * 0.5) + (high_count / total_count * 0.5)
+
+# Print results
+print(paste("Accuracy of majority class predictor:", round(majority_accuracy * 100, 2), "%"))
+print(paste("Accuracy of random guess predictor:", round(random_accuracy * 100, 2), "%"))
+
+```
+```{r}
+modeler <- lmer(Depression_Score ~ Residence_Type + Substance_Use + CGPA + (1 | Course), data = clean_health)
+modeler1 <- lmer(Depression_Score ~ Residence_Type + Substance_Use + (1 | Course), data = clean_health)
+summary(model)
+```
+```{r}
+plot(modeler)
+qqnorm(residuals(modeler))
+qqline(residuals(modeler))
+```
+```{r}
+summary(modeler)
+summary(model2)
+anova(modeler,modeler1)
+```
+
+```{r}
+structure(clean_health)
+range(clean_health$Semester_Credit_Load)
+```
+
+```{r}
+#the following plot shows that the Depression Score is getting smaller the higher the GPA becomes, which is unexpected and interesting.
+plotnew1 <-ggplot(clean_health, aes(x = CGPA, y = Stress_Level)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "red") +
+  labs(title = "Stress Level vs. CGPA", x = "CGPA", y = "Stress Level") +
+  theme_minimal()
+```
+```{r}
+plotnew1
+```
+
+```{r}
+ggsave(plotnew1, 
+       filename = "cgpa_vs_stress.png",
+       device = "png",
+       height = 3, width = 6, units = "in")
+```
+
+```{r}
+
+#Doing the same for each course shows a similar trend, you can also see that the Computer Science students have a significantly larger Depression score
+plotnew2 <-ggplot(clean_health, aes(x = CGPA, y = Stress_Level, color = Course)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Strss Level vs. CGPA by Course", x = "CGPA", y = "Stress Level") +
+  theme_minimal()
+```
+```{r}
+plotnew2
+ggsave(plotnew2, 
+       filename = "cgpa_vs_stress_each.png",
+       device = "png",
+       height = 3, width = 6, units = "in")
+```
+#On the relation between stress level and depression score, there is slight trend that shows that the stress level has an negative relation with depression score, which I found weird.
+```{r}
+plotnew3 <-ggplot(clean_health, aes(x = Depression_Score, y = Stress_Level, color = Course)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Depression score vs. Stress level", x = "Depression Score", y = "Stress Level") +
+  theme_minimal()
+```
+
+```{r}
+plotnew3
+ggsave(plotnew3, 
+       filename = "depression_vs_stress.png",
+       device = "png",
+       height = 3, width = 6, units = "in")
+```
+
+```{r}
+
+#On the following plot you can observe a slight possitive relation between credit load and depression score, although as you can see except from the Computer science students all the others are grouped up very closely together
+plotnew4 <-ggplot(clean_health, aes(x = Semester_Credit_Load, y = Stress_Level, color = Course)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Stress level vs. Credit load", x = "Credit load", y = "Stress Level") +
+  theme_minimal()
+```
+
+```{r}
+plotnew4
+ggsave(plotnew4, 
+       filename = "credit_load_vs_stress_each.png",
+       device = "png",
+       height = 3, width = 6, units = "in")
+```
+
+```{r}
+plotnew6 <-ggplot(clean_health, aes(x = Course, y = Stress_Level)) +
+  geom_boxplot(fill = "lightblue") +
+  labs(title = "Stress Level by Course", x = "Course", y = "Stress Level") +
+  theme_minimal()
+```
+
+```{r}
+plotnew6
+ggsave(plotnew6, 
+       filename = "course_stress.png",
+       device = "png",
+       height = 3, width = 6, units = "in")
+```
+

@@ -19,7 +19,7 @@ setwd("C:/Users/Thanos/Desktop/advanced statistical modeling/mental health")
 ```
 
 ```{r}
-data <-read.csv("students_mental_health_survey.csv")
+data <-clean_health
 ```
 
 ```{r}
@@ -29,7 +29,7 @@ str(data)
 ```{r}
 #data1 doesn't omit some rows with missing values
 #data1 <- na.omit(students_mental_health_survey)
-data <- na.omit("students_mental_health_survey.csv") # Remove rows with missing values
+#data <- na.omit(students_mental_health_survey) # Remove rows with missing values
 ```
 
 
@@ -64,6 +64,9 @@ summary(model)
 qqnorm(residuals(model))
 qqline(residuals(model))
 ```
+```{r}
+plot(fitted(model))
+```
 
 ```{r}
 coefficients <- as.data.frame(summary(model)$coefficients) # Extract and clean coefficients for visualization
@@ -76,11 +79,19 @@ coefficients <- coefficients %>% filter(Course != "(Intercept)")
 ```
 
 ```{r}
-ggplot(coefficients, aes(x = reorder(Course, abs(Estimate)), y = Estimate)) +
+plot <-ggplot(coefficients, aes(x = reorder(Course, abs(Estimate)), y = Estimate)) +
   geom_bar(stat = "identity") +
   coord_flip() +
   labs(title = "Feature Importance from Logistic Regression",
        x = "Features", y = "Coefficient Estimate")
+```
+
+```{r}
+plot
+ggsave(plot, 
+       filename = "feature_importance.png",
+       device = "png",
+       height = 4.6, width = 6.5, units = "in")
 ```
 
 ```{r}
@@ -107,4 +118,45 @@ ggplot(course_coefficients, aes(x = reorder(Course, abs(Estimate)), y = Estimate
        x = "Course Categories", y = "Coefficient Estimate")
 
 ```
+```{r}
+data$Stess_Level <- as.factor(data$Depression_Score)
 
+```
+
+```{r}
+set.seed(42)
+train_index <- sample(1:nrow(data), 0.7 * nrow(data))
+train_data <- data[train_index, ]
+test_data <- data[-train_index, ]
+```
+
+```{r}
+model <- glm(Stress_Level ~ ., data = train_data)
+
+```
+
+```{r}
+coefficients <- as.data.frame(summary(model)$coefficients) # Extract and clean coefficients for visualization
+
+colnames(coefficients) <- c("Estimate", "StdError", "z_value", "p_value") #renaming collumns to make them more descriptive
+coefficients <- coefficients %>% rownames_to_column("Course") #adding feature names as columns
+
+# Filtering out the intercept
+coefficients <- coefficients %>% filter(Course != "(Intercept)")
+```
+
+```{r}
+plotnew <-ggplot(coefficients, aes(x = reorder(Course, abs(Estimate)), y = Estimate)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Feature Importance from Logistic Regression",
+       x = "Features", y = "Coefficient Estimate")
+```
+
+```{r}
+plotnew
+ggsave(plotnew, 
+       filename = "feature_importance_new.png",
+       device = "png",
+       height = 4.6, width = 6.5, units = "in")
+```
